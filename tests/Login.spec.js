@@ -1,27 +1,50 @@
-const { test, expect } = require('@playwright/test');
+import { test, expect } from '@playwright/test'
+import {Login} from '../page-objects/login'
+import {data} from '../data/data.json'
 
-test('Login test',async({browser})=>{
-    const context = await browser.newContext()
-    const page = await context.newPage()
+test.describe('Login Module', () => {
+    let login
+    test.beforeEach(async({page}) => {
+        login = new Login(page)
+        await page.goto('https://www.saucedemo.com/')
+    })
+    test('Login with valid credentials', async ({page}) => {
+        await login.loginSteps(data.validCredentials.username, data.validCredentials.password)
+        await expect(page.locator('[class="title"]', "Products")).toBeVisible() 
+    })
 
-    await page.goto('https://www.saucedemo.com/')
+    test('Login as a locked out user', async ({page}) => {
+        await login.loginSteps(data.blockedUser.username, data.blockedUser.password)
+        const errorMsg = await page.getByText('Epic sadface: Sorry, this user has been locked out.').isVisible()
+        expect(errorMsg).toBeTruthy()
+        
+    })
 
-    //Login
-    await page.locator('[placeholder="Username"]').fill('standard_user')           
-    await page.locator('[placeholder="Password"]').fill('secret_sauce')             
-    await page.locator('[type="submit"]').click()                      
-    await expect(page.locator('[class="title"]', "Products")).toBeVisible()  
+    test('Login as a problem user', async ({page}) => {
+        await login.loginSteps(data.problemUser.username, data.problemUser.password)
+        await expect(page.locator('[class="title"]', "Products")).toBeVisible() 
+        
+    })
 
-    //Add Products to carts
-    await page.locator('[data-test="add-to-cart-sauce-labs-backpack"]').click()
-    await page.locator('[data-test="add-to-cart-sauce-labs-bike-light"]').click()
+    test('Login as a performance glitch user', async ({page}) => {
+        await login.loginSteps(data.performanceGlitchUser.username, data.performanceGlitchUser.password)
+        await expect(page.locator('[class="title"]', "Products")).toBeVisible() 
+        
+    })
 
-    //Check the cart was added successfully
-    await expect(page.locator("[data-test='shopping-cart-badge']")).toContainText('2') 
-    await page.locator('[data-test="shopping-cart-link"]').click()
-    await expect(page.locator('[data-test="item-4-title-link"]')).toContainText('Sauce Labs Backpack')  
-    await expect(page.locator('[data-test="item-0-title-link"]')).toContainText('Sauce Labs Bike Light') 
+    test('Login as an error user', async ({page}) => {
+        await login.loginSteps(data.errorUser.username, data.errorUser.password)
+        await expect(page.locator('[class="title"]', "Products")).toBeVisible() 
+        
+    })
 
+    test('Login as a visual user', async ({page}) => {
+        await login.loginSteps(data.visualUser.username, data.visualUser.password)
+        await expect(page.locator('[class="title"]', "Products")).toBeVisible() 
+        
+    })
 })
-  
 
+test.afterEach(async ({page}) => {
+    await page.close()
+})
